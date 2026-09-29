@@ -447,10 +447,10 @@ canvas{position:absolute;inset:0;width:100%;height:100%;border-radius:50%;displa
     return false;
   }
   function seedFromLegacy(){
-    var any = false, base = Date.now() - 60000;      // 当作"一分钟前刚确认过"，比老删除记录新
-    CATS.forEach(function(k){
+    var any = false;                                 // 老数据没有可靠时间，当作"很久以前的记录"
+    CATS.forEach(function(k){                        // 这样云端已有的删除记录能正确地压过它，不会复活
       (state.lists[k] || []).forEach(function(n, i){
-        if(!ops[k][n]){ ops[k][n] = [base + i, 0]; any = true; }
+        if(!ops[k][n]){ ops[k][n] = [1 + i, 0]; any = true; }
       });
     });
     if(any) hadLocal = true;
