@@ -80,8 +80,8 @@ body{
 .tabs{display:flex;gap:8px;background:#fff0f6;padding:5px;border-radius:18px;margin-bottom:16px;box-shadow:var(--shadow-s)}
 .tab{
   flex:1;appearance:none;border:0;background:transparent;color:var(--ink-soft);
-  font-family:inherit;font-size:14.5px;font-weight:700;padding:10px 6px;border-radius:14px;
-  cursor:pointer;transition:.25s;touch-action:manipulation;
+  font-family:inherit;font-size:13.5px;font-weight:700;padding:10px 4px;border-radius:14px;
+  cursor:pointer;transition:.25s;touch-action:manipulation;white-space:nowrap;
 }
 .tab[aria-selected="true"]{
   background:#fff;color:var(--pink-d);
@@ -139,16 +139,7 @@ body{
 .empty{color:#cbb0bc;font-size:12.5px;text-align:center;padding:12px 4px}
 
 /* 预设 */
-.presets{margin-top:14px;border-top:1px dashed #ffe6f0;padding-top:12px}
-.presets .t{font-size:11.5px;color:var(--ink-soft);margin-bottom:9px;letter-spacing:.06em}
-.preset-list{display:flex;flex-wrap:wrap;gap:7px}
-.preset{
-  appearance:none;font-family:inherit;font-size:12.5px;color:#8a6a78;
-  background:#fff;border:1.5px dashed #ffdcea;border-radius:999px;padding:7px 12px;
-  cursor:pointer;transition:.18s;touch-action:manipulation;
-}
-.preset:active{transform:scale(.94);background:#fff4f9}
-.preset[disabled]{opacity:.35;cursor:default}
+.chips{margin-top:12px}
 
 /* ============ 转盘 ============ */
 .wheel-card{padding:20px 14px 18px;text-align:center;background:linear-gradient(180deg,#fff 0%,#fffafc 100%)}
@@ -291,8 +282,9 @@ canvas{position:absolute;inset:0;width:100%;height:100%;border-radius:50%;displa
   <!-- 转盘区 -->
   <section class="card wheel-card">
     <div class="tabs" role="tablist">
-      <button class="tab" id="tab-food" role="tab" aria-selected="true">🍜 吃什么</button>
-      <button class="tab" id="tab-drink" role="tab" aria-selected="false">🧋 喝什么</button>
+      <button class="tab" data-tab="food" role="tab" aria-selected="true">🍜 吃什么</button>
+      <button class="tab" data-tab="drink" role="tab" aria-selected="false">🧋 奶茶</button>
+      <button class="tab" data-tab="coffee" role="tab" aria-selected="false">☕ 咖啡</button>
     </div>
     <div class="wheel-stage" id="stage">
       <div class="ring"></div>
@@ -326,11 +318,6 @@ canvas{position:absolute;inset:0;width:100%;height:100%;border-radius:50%;displa
     <div class="saverow"><span class="saved" id="saved">☁ 正在连接云端…</span></div>
 
     <div class="chips" id="chips"></div>
-
-    <div class="presets">
-      <div class="t">✨ 点一下快速添加</div>
-      <div class="preset-list" id="presets"></div>
-    </div>
   </section>
 
   <div class="foot">
@@ -365,29 +352,29 @@ canvas{position:absolute;inset:0;width:100%;height:100%;border-radius:50%;displa
   var PALETTE = ["#FFB6CB","#FFD3B6","#FFF1B8","#C9F0DA","#BFE3FA","#DCCDF8",
                  "#FFC9DE","#FFE0C2","#D8F5EA","#CDE7FF","#EBDFFB","#FFF7C9"];
 
-  var PRESETS = {
-    food:["🍲 火锅","🍜 拉面","🍚 盖饭","🍗 炸鸡","🍕 披萨","🍔 汉堡","🥟 饺子","🍣 寿司","🌮 塔可","🍝 意面","🥘 麻辣烫","🍛 咖喱"],
-    drink:["🧋 奶茶","☕ 咖啡","🍵 抹茶","🥤 可乐","🧃 果汁","🍋 柠檬茶","🍓 奶昔","🥛 牛奶","🥥 椰椰","🍺 啤酒","💧 白开水","🫧 气泡水"]
-  };
+  var CATS = ["food","drink","coffee"];                 // 三栏：吃的 / 奶茶 / 咖啡
+  var WIRE = { food:"f", drink:"k", coffee:"c" };       // 云端同步用的短名
   var FIRST = {
     food:["🍲 火锅","🍗 炸鸡","🍜 拉面","🍣 寿司","🥟 饺子"],
-    drink:["🧋 奶茶","☕ 咖啡","🍋 柠檬茶","🥤 可乐","💧 白开水"]
+    drink:["🧋 珍珠奶茶","🍵 抹茶拿铁","🥭 杨枝甘露","🍋 柠檬茶","🍓 草莓奶昔"],
+    coffee:["☕ 美式","🥛 拿铁","🥥 生椰拿铁","🍫 摩卡","🧊 冰美式"]
   };
   var TITLES = {
     food:{t:"今天吃什么呢？",s:"把纠结交给转盘，把快乐留给自己 🎀",ph:"输入想吃的，比如 螺蛳粉"},
-    drink:{t:"今天喝什么呢？",s:"奶茶还是咖啡，让转盘替你决定 🧋",ph:"输入想喝的，比如 杨枝甘露"}
+    drink:{t:"喝哪家奶茶呢？",s:"点点还是一点点，让转盘替你决定 🧋",ph:"输入想喝的奶茶，比如 杨枝甘露"},
+    coffee:{t:"今天喝哪杯咖啡？",s:"美式还是拿铁，让转盘替你决定 ☕",ph:"输入想喝的咖啡，比如 生椰拿铁"}
   };
   var QUOTES = ["就是它啦，别再纠结了～","命运已经安排好了 ✨","听转盘的，准没错 🎀",
                 "今天就和它约会吧 💕","别想了，越想吃越香 😋","这是宇宙给你的答案 🌙"];
 
-  var state = { tab:"food", lists:{ food:[], drink:[] } };
+  var state = { tab:"food", lists:{ food:[], drink:[], coffee:[] } };
   var rot = 0, spinning = false, winner = -1, muted = false;
   var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   /* ================= DOM ================= */
   var $ = function(id){ return document.getElementById(id); };
   var cvs = $("wheel"), ctx = cvs.getContext("2d"), stage = $("stage"), stageInner = $("stageInner");
-  var chipsEl = $("chips"), presetEl = $("presets"), inputEl = $("opt-input");
+  var chipsEl = $("chips"), inputEl = $("opt-input");
   var R = 100, CX = 100, CY = 100, DPR = 1;
 
   function list(){ return state.lists[state.tab]; }
@@ -396,7 +383,7 @@ canvas{position:absolute;inset:0;width:100%;height:100%;border-radius:50%;displa
   var SYNC_TOPIC = "luxixi-wheel-zgx8d7cn5cy3";     // 所有设备共用同一个频道
   var SYNC_URL = "https://ntfy.sh/" + SYNC_TOPIC;
   var OPS_KEY = KEY + "-ops", DEV_KEY = KEY + "-dev";
-  var ops = { food:{}, drink:{} };                     // 名字 -> [加入时间, 删除时间]
+  var ops = { food:{}, drink:{}, coffee:{} };          // 名字 -> [加入时间, 删除时间]
   var hadLocal = false, seeded = false, firstPollDone = false;
   var syncOn = false, syncSince = "all", syncBusy = false, seen = {}, pushTimer = null, syncTimer = null;
   var cloudMsgs = 0;                                    // 云端历史消息条数：有人用过就不再塞默认菜谱
@@ -413,7 +400,7 @@ canvas{position:absolute;inset:0;width:100%;height:100%;border-radius:50%;displa
     el.className = "saved " + (ok ? "ok" : "bad");
     el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash");
   }
-  function countAll(){ return state.lists.food.length + state.lists.drink.length; }
+  function countAll(){ var n = 0; CATS.forEach(function(k){ n += state.lists[k].length; }); return n; }
 
   /* ---- 本机存储：断网也能正常用 ---- */
   function saveLocal(){
@@ -438,7 +425,10 @@ canvas{position:absolute;inset:0;width:100%;height:100%;border-radius:50%;displa
       var raw = localStorage.getItem(OPS_KEY);
       if(raw){
         var o = JSON.parse(raw);
-        if(o && o.food && o.drink){ ops = { food:o.food, drink:o.drink }; hadLocal = true; return true; }
+        if(o && o.food && o.drink){
+          ops = { food:o.food, drink:o.drink, coffee:o.coffee || {} };
+          hadLocal = true; return true;
+        }
       }
     }catch(e){}
     return false;
@@ -448,18 +438,17 @@ canvas{position:absolute;inset:0;width:100%;height:100%;border-radius:50%;displa
       var raw = localStorage.getItem(KEY);
       if(!raw) return false;
       var d = JSON.parse(raw);
-      if(d && d.lists && Array.isArray(d.lists.food) && Array.isArray(d.lists.drink)){
-        state.tab = (d.tab === "drink") ? "drink" : "food";
-        state.lists.food = d.lists.food.slice(0, MAX);
-        state.lists.drink = d.lists.drink.slice(0, MAX);
-        return state.lists.food.length + state.lists.drink.length > 0;
+      if(d && d.lists && (Array.isArray(d.lists.food) || Array.isArray(d.lists.drink))){
+        state.tab = CATS.indexOf(d.tab) > -1 ? d.tab : "food";
+        CATS.forEach(function(k){ state.lists[k] = Array.isArray(d.lists[k]) ? d.lists[k].slice(0, MAX) : []; });
+        return countAll() > 0;
       }
     }catch(e){}
     return false;
   }
   function seedFromLegacy(){
     var any = false, base = Date.now() - 60000;      // 当作"一分钟前刚确认过"，比老删除记录新
-    ["food","drink"].forEach(function(k){
+    CATS.forEach(function(k){
       (state.lists[k] || []).forEach(function(n, i){
         if(!ops[k][n]){ ops[k][n] = [base + i, 0]; any = true; }
       });
@@ -467,12 +456,12 @@ canvas{position:absolute;inset:0;width:100%;height:100%;border-radius:50%;displa
     if(any) hadLocal = true;
   }
   function seedDefaults(){
-    ["food","drink"].forEach(function(k){
+    CATS.forEach(function(k){
       FIRST[k].forEach(function(n, i){ if(!ops[k][n]) ops[k][n] = [1 + i, 0]; });
     });
   }
   function rebuild(){
-    ["food","drink"].forEach(function(k){
+    CATS.forEach(function(k){
       var names = Object.keys(ops[k]).filter(function(n){ return ops[k][n][0] > ops[k][n][1]; });
       names.sort(function(a,b){ return (ops[k][a][0] - ops[k][b][0]) || (a < b ? -1 : 1); });
       state.lists[k] = names.slice(0, MAX);
@@ -484,13 +473,16 @@ canvas{position:absolute;inset:0;width:100%;height:100%;border-radius:50%;displa
   }
 
   /* ---- 云同步：一个公共消息频道，谁改了就广播一条，其他人拉取合并 ---- */
+  var lastPub = {};
   function publish(keys){
     keys.forEach(function(k){
+      var sig = JSON.stringify(ops[k]);
+      if(sig === lastPub[k]) return;                   // 没变化就不重复广播
       var body = { v:2, dev:devId };
-      body[k === "food" ? "f" : "k"] = ops[k];
+      body[WIRE[k]] = ops[k];
       try{
         fetch(SYNC_URL, { method:"POST", body: JSON.stringify(body) })
-          .then(function(r){ if(r.ok) syncOn = true; })
+          .then(function(r){ if(r.ok){ syncOn = true; lastPub[k] = sig; } })
           .catch(function(){ syncOn = false; });
       }catch(e){ syncOn = false; }
     });
@@ -498,7 +490,7 @@ canvas{position:absolute;inset:0;width:100%;height:100%;border-radius:50%;displa
 
   function mergeRemote(msg){
     var changed = false;
-    [["f","food"],["k","drink"]].forEach(function(p){
+    [["f","food"],["k","drink"],["c","coffee"]].forEach(function(p){
       var src = msg[p[0]]; if(!src) return;
       var dst = ops[p[1]];
       Object.keys(src).forEach(function(n){
@@ -533,16 +525,16 @@ canvas{position:absolute;inset:0;width:100%;height:100%;border-radius:50%;displa
       if(!firstPollDone){
         firstPollDone = true;
         if(!hadLocal && countAll() === 0 && !seeded && cloudMsgs === 0){ seeded = true; seedDefaults(); }
-        rebuild(); renderChips(); renderPresets(); draw(); saveLocal();
-        publish(["food", "drink"]);                     // 云端留一份完整快照
+        rebuild(); renderChips(); draw(); saveLocal();
+        publish(CATS);                                // 云端留一份完整快照
         setSaved("✓ 已同步 · 所有人看到同一份清单", true);
       }else{
-        if(changed){ rebuild(); renderChips(); renderPresets(); draw(); saveLocal(); }
+        if(changed){ rebuild(); renderChips(); draw(); saveLocal(); }
         setSaved(changed ? "✓ 同步完成（收到了别人的修改）" : "✓ 已同步 · 所有人看到同一份清单", true);
       }
     }).catch(function(){
       syncBusy = false; syncOn = false;
-      if(!firstPollDone){ firstPollDone = true; rebuild(); renderChips(); renderPresets(); draw(); }
+      if(!firstPollDone){ firstPollDone = true; rebuild(); renderChips(); draw(); }
       setSaved("⚠ 暂时连不上云端，已存本机，联网后会自动补上", false);
     });
   }
@@ -601,8 +593,10 @@ canvas{position:absolute;inset:0;width:100%;height:100%;border-radius:50%;displa
     $("title").textContent = TITLES[state.tab].t;
     $("subtitle").textContent = TITLES[state.tab].s;
     inputEl.placeholder = TITLES[state.tab].ph;
-    $("tab-food").setAttribute("aria-selected", String(state.tab === "food"));
-    $("tab-drink").setAttribute("aria-selected", String(state.tab === "drink"));
+    var btns = document.querySelectorAll(".tab");
+    for(var i=0;i<btns.length;i++){
+      btns[i].setAttribute("aria-selected", String(btns[i].getAttribute("data-tab") === state.tab));
+    }
   }
   function renderChips(){
     var arr = list();
@@ -610,7 +604,7 @@ canvas{position:absolute;inset:0;width:100%;height:100%;border-radius:50%;displa
     if(!arr.length){
       var d = document.createElement("div");
       d.className = "empty";
-      d.textContent = firstPollDone ? "还没有选项，下面点几个或者自己输入吧～" : "☁ 正在从云端同步…";
+      d.textContent = firstPollDone ? "还没有选项，在上面输入框里加几个吧～" : "☁ 正在从云端同步…";
       chipsEl.appendChild(d);
     }
     arr.forEach(function(name, i){
@@ -635,18 +629,7 @@ canvas{position:absolute;inset:0;width:100%;height:100%;border-radius:50%;displa
       ? ("当前 " + arr.length + " 个选项 · 想改就在下面加减")
       : "还没选项呢，先去下面加几个吧～";
   }
-  function renderPresets(){
-    var arr = list();
-    presetEl.innerHTML = "";
-    PRESETS[state.tab].forEach(function(name){
-      var b = document.createElement("button");
-      b.type = "button"; b.className = "preset"; b.textContent = name;
-      b.disabled = arr.indexOf(name) > -1;
-      b.addEventListener("click", function(){ add(name); });
-      presetEl.appendChild(b);
-    });
-  }
-  function commit(){ rebuild(); renderChips(); renderPresets(); draw(); save(); }
+  function commit(){ rebuild(); renderChips(); draw(); save(); }
 
   function add(raw){
     var v = String(raw == null ? "" : raw).trim().replace(/\s+/g," ");
@@ -858,10 +841,12 @@ canvas{position:absolute;inset:0;width:100%;height:100%;border-radius:50%;displa
   }
 
   /* ================= 事件 ================= */
-  $("tab-food").addEventListener("click", function(){ switchTab("food"); });
-  $("tab-drink").addEventListener("click", function(){ switchTab("drink"); });
+  var tabBtns = document.querySelectorAll(".tab");
+  for(var ti = 0; ti < tabBtns.length; ti++){
+    (function(b){ b.addEventListener("click", function(){ switchTab(b.getAttribute("data-tab")); }); })(tabBtns[ti]);
+  }
   function switchTab(t){
-    if(state.tab === t) return;
+    if(CATS.indexOf(t) < 0 || state.tab === t) return;
     if(spinning){ toast("转盘还在转呢，等一等～"); return; }
     state.tab = t; winner = -1; rot = 0;
     renderHead(); commit(); save();
@@ -935,7 +920,6 @@ canvas{position:absolute;inset:0;width:100%;height:100%;border-radius:50%;displa
   rebuild();
   renderHead();
   renderChips();
-  renderPresets();
   sparkles();
   poll();
   startSync();
