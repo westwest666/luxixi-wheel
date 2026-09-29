@@ -656,6 +656,7 @@ canvas{position:absolute;inset:0;width:100%;height:100%;border-radius:50%;displa
     draw();
   }
 
+  function fontOf(px){ return "700 " + px + "px system-ui,-apple-system,'PingFang SC','Microsoft YaHei',sans-serif"; }
   function fitText(text, maxW, font){
     ctx.font = font;
     if(ctx.measureText(text).width <= maxW) return text;
@@ -718,10 +719,16 @@ canvas{position:absolute;inset:0;width:100%;height:100%;border-radius:50%;displa
       ctx.font = font;
       ctx.fillStyle = hot ? "#c9457a" : "#6b4a58";
       ctx.textBaseline = "middle";
-      var bandA = inner + 6, bandB = outer - 8;
+      var bandA = (n <= 3) ? R * 0.32 : inner + 6, bandB = outer - 8;
       var maxW = bandB - bandA;
-      var label = fitText(arr[i], maxW, font);
-      var tw = ctx.measureText(label).width;
+      ctx.font = font;
+      var label = arr[i], tw = ctx.measureText(label).width, fs = fontSize;
+      while(tw > maxW && fs > 10.5){                    // 名字长就先缩字号，实在放不下才截断
+        fs -= 0.5;
+        ctx.font = fontOf(fs);
+        tw = ctx.measureText(label).width;
+      }
+      if(tw > maxW){ label = fitText(label, maxW, ctx.font); tw = ctx.measureText(label).width; }
       var tx = bandB - Math.max(0, (maxW - tw) / 2);   // 在可用半径区间里居中，更平衡
       if(mid > Math.PI/2 && mid < Math.PI*1.5){
         ctx.rotate(Math.PI);
